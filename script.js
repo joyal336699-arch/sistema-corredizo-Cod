@@ -99,6 +99,19 @@ function validarEntradaHv() {
     }
 }
 
+function limitarCuatroDigitos(event) {
+    let input = event.target;
+    
+    // Usar setTimeout para capturar el valor después del pegado
+    setTimeout(() => {
+        // Eliminar cualquier carácter que no sea número
+        input.value = input.value.replace(/[^0-9]/g, '');
+        // Limitar a 4 dígitos
+        if (input.value.length > 4) {
+            input.value = input.value.slice(0, 4);
+        }
+    }, 0);
+}
 // ==============================================
 // FUNCIONES PRINCIPALES
 // ==============================================
@@ -296,6 +309,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Validaciones en tiempo real
     document.getElementById('entradaAv').addEventListener('input', validarEntradaAv);
     document.getElementById('entradaHv').addEventListener('input', validarEntradaHv);
+    // Limitar a 4 dígitos
+    document.getElementById('entradaAv').addEventListener('input', limitarCuatroDigitos);
+    document.getElementById('entradaHv').addEventListener('input', limitarCuatroDigitos);
     
     // Configurar eventos automáticos para selects
     configurarEventosAutomaticos();

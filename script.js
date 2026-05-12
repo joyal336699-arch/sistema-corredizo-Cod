@@ -56,9 +56,6 @@ function validarEntradaAv() {
         input.className = 'form-control warning';
         icon.className = 'input-icon fas fa-exclamation-triangle';
         message.className = 'validation-message';
-         if (mostrarToastError) {
-        mostrarToast('warning', 'Campo vacío', 'Ingresa el ancho del vano (600-2400 mm)');
-        }
         return false;
     }
     

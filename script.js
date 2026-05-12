@@ -98,6 +98,7 @@ function validarEntradaHv() {
         return true;
     }
 }
+
 function limitar4Digitos(input) {
     if (input.value.length > 4) {
         input.value = input.value.slice(0, 4);
@@ -111,7 +112,6 @@ function obtenerValorTapacanto(texto) {
     return parseFloat(texto.replace(' mm', ''));
 }
 
-// Variable para evitar múltiples llamadas simultáneas
 let calculando = false;
 
 async function calcularMedidas() {
@@ -121,7 +121,6 @@ async function calcularMedidas() {
     const hvValido = validarEntradaHv();
     
     if (!avValido || !hvValido) {
-        mostrarToast('error', 'Error de validación', 'Corrige las medidas antes de calcular');
         return;
     }
     
@@ -135,25 +134,15 @@ async function calcularMedidas() {
     calculando = true;
     
     try {
-        console.log('Enviando petición a:', `${API_BASE_URL}/api/calcular`);
-        console.log('Datos:', { av, hv, material, espesor });
-        
         const response = await fetch(`${API_BASE_URL}/api/calcular`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ av, hv, material, espesor })
         });
         
-        console.log('Respuesta status:', response.status);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Error response:', errorText);
-            throw new Error(`Error ${response.status}: ${errorText}`);
-        }
+        if (!response.ok) throw new Error(`Error ${response.status}`);
         
         const data = await response.json();
-        console.log('Datos recibidos:', data);
         
         // Actualizar UI
         document.getElementById('resultAv').textContent = data.av + ' mm';
@@ -185,27 +174,28 @@ async function calcularMedidas() {
         mostrarToast('success', 'Cálculo exitoso', `AP: ${data.ap} mm, HP: ${data.hp} mm`);
         
     } catch (error) {
-        console.error('Error detallado:', error);
+        console.error('Error:', error);
         mostrarToast('error', 'Error de conexión', error.message);
     } finally {
         calculando = false;
     }
 }
+
+// Función para actualizar automáticamente al cambiar selects
 function actualizarAutomatico() {
     const av = document.getElementById('entradaAv').value;
     const hv = document.getElementById('entradaHv').value;
     
-    // Solo actualizar si ya hay medidas válidas ingresadas
     if (av && hv && av !== '' && hv !== '') {
         const avNum = parseInt(av);
         const hvNum = parseInt(hv);
         
-        // Verificar rangos antes de llamar
         if (avNum >= 600 && avNum <= 2400 && hvNum >= 1000 && hvNum <= 2200) {
             calcularMedidas();
         }
     }
 }
+
 async function generarReporte() {
     const ap = document.getElementById('resultAp').textContent;
     if (ap === '....') {
@@ -275,40 +265,39 @@ function nuevaCalculo() {
 }
 
 // ==============================================
-// ACTUALIZACIÓN AUTOMÁTICA AL CAMBIAR SELECTS
-// ==============================================
-function configurarEventosAutomaticos() {
-    // Material y espesor
-    document.getElementById('comboMaterial').addEventListener('change', actualizarAutomatico);
-    document.getElementById('comboEspesor').addEventListener('change', actualizarAutomatico);
-    
-    // Tapacantos
-    document.getElementById('comboTapacantoLargo').addEventListener('change', actualizarAutomatico);
-    document.getElementById('comboTapacantoAncho').addEventListener('change', actualizarAutomatico);
-}
-
-// ==============================================
 // INICIALIZACIÓN
 // ==============================================
 document.addEventListener('DOMContentLoaded', function() {
-    // Evento para mostrar material seleccionado
+    // Material selector
     document.getElementById('comboMaterial').addEventListener('change', function() {
         document.getElementById('materialSeleccionado').textContent = this.value;
+        actualizarAutomatico();
     });
     
-    // Validaciones en tiempo real
-    document.getElementById('entradaAv').addEventListener('input', validarEntradaAv);
-    document.getElementById('entradaHv').addEventListener('input', validarEntradaHv);
+    // Espesor
+    document.getElementById('comboEspesor').addEventListener('change', function() {
+        actualizarAutomatico();
+    });
+    
+    // Tapacantos
+    document.getElementById('comboTapacantoLargo').addEventListener('change', function() {
+        actualizarAutomatico();
+    });
+    
+    document.getElementById('comboTapacantoAncho').addEventListener('change', function() {
+        actualizarAutomatico();
+    });
+    
+    // Inputs
     document.getElementById('entradaAv').addEventListener('input', function() {
-    limitar4Digitos(this);
-    });
-
-    document.getElementById('entradaHv').addEventListener('input', function() {
-    limitar4Digitos(this);
+        limitar4Digitos(this);
+        validarEntradaAv();
     });
     
-    // Configurar eventos automáticos para selects
-    //configurarEventosAutomaticos();
+    document.getElementById('entradaHv').addEventListener('input', function() {
+        limitar4Digitos(this);
+        validarEntradaHv();
+    });
     
     // Mostrar mensaje de bienvenida
     setTimeout(() => {

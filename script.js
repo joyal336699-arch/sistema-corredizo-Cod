@@ -299,8 +299,9 @@ async function generarReporte() {
         });
         
         const html = await response.text();
-        const ventana = window.open();
+        const ventana = window.open('', '_blank');
         ventana.document.write(html);
+        ventana.document.title = 'Reporte CA-7025';  //
         ventana.document.close();
         mostrarToast('success', 'Reporte generado', 'El reporte se abrió en una nueva ventana');
     } catch (error) {

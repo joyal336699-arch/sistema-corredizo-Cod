@@ -521,7 +521,7 @@
                         <div class="form-group">
                             <label class="form-label"><i class="fas fa-arrows-alt-h"></i> Ancho (mm)</label>
                             <div class="input-with-icon">
-                                <input type="number" id="entradaAv" class="form-control warning" placeholder="600-2400 mm" min="600" max="2400" oninput="if(this.value.length > 4) this.value = this.value.slice(0,4)">
+                                <input type="text" id="entradaAv" class="form-control warning" placeholder="600-2400 mm" inputmode="numeric" pattern="[0-9]*">
                                 <i class="input-icon fas fa-exclamation-triangle"></i>
                             </div>
                             <div class="validation-message" id="avMessage"></div>
@@ -529,7 +529,7 @@
                         <div class="form-group">
                             <label class="form-label"><i class="fas fa-arrows-alt-v"></i> Altura (mm)</label>
                             <div class="input-with-icon">
-                                <input type="number" id="entradaHv" class="form-control warning" placeholder="1000-2200 mm" min="1000" max="2200" oninput="if(this.value.length > 4) this.value = this.value.slice(0,4)">
+                                <input type="text" id="entradaHv" class="form-control warning" placeholder="1000-2200 mm" inputmode="numeric" pattern="[0-9]*">
                                 <i class="input-icon fas fa-exclamation-triangle"></i>
                             </div>
                             <div class="validation-message" id="hvMessage"></div>

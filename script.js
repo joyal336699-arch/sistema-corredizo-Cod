@@ -184,7 +184,6 @@ function actualizarPorSelect() {
     const av = document.getElementById('entradaAv').value;
     const hv = document.getElementById('entradaHv').value;
     
-    // Verificar que ancho y alto tengan valores válidos
     if (!av || !hv || av === '' || hv === '') {
         console.log('No hay medidas ingresadas');
         return;
@@ -195,12 +194,23 @@ function actualizarPorSelect() {
     
     if (avNum >= 600 && avNum <= 2400 && hvNum >= 1000 && hvNum <= 2200) {
         console.log('Actualizando por cambio en select...');
-        calcularMedidas();
-    } else {
-        console.log('Medidas fuera de rango');
+        
+        // FORZAR LA LECTURA DE VALORES ACTUALES
+        const material = document.getElementById('comboMaterial').value;
+        const espesor = parseInt(document.getElementById('comboEspesor').value.replace(' mm', ''));
+        const tapacantoLargo = parseFloat(document.getElementById('comboTapacantoLargo').value.replace(' mm', ''));
+        const tapacantoAncho = parseFloat(document.getElementById('comboTapacantoAncho').value.replace(' mm', ''));
+        
+        console.log('Nuevos valores:', { material, espesor, tapacantoLargo, tapacantoAncho });
+        
+        // Llamar a calcular con los valores actuales
+        if (typeof calcularMedidas === 'function') {
+            calcularMedidas();
+        } else {
+            console.error('calcularMedidas no está definida');
+        }
     }
 }
-
 async function generarReporte() {
     const ap = document.getElementById('resultAp').textContent;
     if (ap === '....') {

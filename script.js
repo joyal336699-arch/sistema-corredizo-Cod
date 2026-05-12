@@ -116,6 +116,7 @@ async function calcularMedidas() {
     const hvValido = validarEntradaHv();
     
     if (!avValido || !hvValido) {
+        mostrarToast('error', 'Error de validación', 'Corrige las medidas antes de calcular');
         return;
     }
     
@@ -129,15 +130,25 @@ async function calcularMedidas() {
     calculando = true;
     
     try {
-        // Calcular medidas básicas
+        console.log('Enviando petición a:', `${API_BASE_URL}/api/calcular`);
+        console.log('Datos:', { av, hv, material, espesor });
+        
         const response = await fetch(`${API_BASE_URL}/api/calcular`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ av, hv, material, espesor })
         });
         
-        if (!response.ok) throw new Error(`Error ${response.status}`);
+        console.log('Respuesta status:', response.status);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+            throw new Error(`Error ${response.status}: ${errorText}`);
+        }
+        
         const data = await response.json();
+        console.log('Datos recibidos:', data);
         
         // Actualizar UI
         document.getElementById('resultAv').textContent = data.av + ' mm';
@@ -155,7 +166,8 @@ async function calcularMedidas() {
             body: JSON.stringify({ ap: data.ap, hp: data.hp, tapacantoLargo, tapacantoAncho })
         });
         
-        if (!responseTap.ok) throw new Error(`Error ${responseTap.status}`);
+        if (!responseTap.ok) throw new Error(`Error ${responseTap.status} en tapacantos`);
+        
         const tapData = await responseTap.json();
         
         document.getElementById('resultL').textContent = tapData.largoPuertaCorte;
@@ -165,22 +177,29 @@ async function calcularMedidas() {
         document.getElementById('resultA1').textContent = tapData.anchoTapacanto;
         document.getElementById('resultA2').textContent = tapData.anchoTapacanto;
         
+        mostrarToast('success', 'Cálculo exitoso', `AP: ${data.ap} mm, HP: ${data.hp} mm`);
+        
     } catch (error) {
-        console.error('Error:', error);
-        mostrarToast('error', 'Error de conexión', 'No se pudo conectar con el backend');
+        console.error('Error detallado:', error);
+        mostrarToast('error', 'Error de conexión', error.message);
     } finally {
         calculando = false;
     }
 }
 
-// Función para actualizar automáticamente cuando cambian los selects
 function actualizarAutomatico() {
     const av = document.getElementById('entradaAv').value;
     const hv = document.getElementById('entradaHv').value;
     
-    // Solo actualizar si ya hay medidas ingresadas
+    // Solo actualizar si ya hay medidas válidas ingresadas
     if (av && hv && av !== '' && hv !== '') {
-        calcularMedidas();
+        const avNum = parseInt(av);
+        const hvNum = parseInt(hv);
+        
+        // Verificar rangos antes de llamar
+        if (avNum >= 600 && avNum <= 2400 && hvNum >= 1000 && hvNum <= 2200) {
+            calcularMedidas();
+        }
     }
 }
 

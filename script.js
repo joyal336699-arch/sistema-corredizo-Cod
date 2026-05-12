@@ -144,7 +144,6 @@ async function calcularMedidas() {
         
         const data = await response.json();
         
-        // Actualizar UI
         document.getElementById('resultAv').textContent = data.av + ' mm';
         document.getElementById('resultHv').textContent = data.hv + ' mm';
         document.getElementById('resultAp').textContent = data.ap + ' mm';
@@ -153,7 +152,6 @@ async function calcularMedidas() {
         document.getElementById('resultEsp').textContent = data.espesor;
         document.getElementById('materialSeleccionado').textContent = data.material;
         
-        // Calcular tapacantos
         const responseTap = await fetch(`${API_BASE_URL}/api/tapacantos`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -181,18 +179,25 @@ async function calcularMedidas() {
     }
 }
 
-// Función para actualizar automáticamente al cambiar selects
-function actualizarAutomatico() {
+// Esta función se llama cuando cambian los selects
+function actualizarPorSelect() {
     const av = document.getElementById('entradaAv').value;
     const hv = document.getElementById('entradaHv').value;
     
-    if (av && hv && av !== '' && hv !== '') {
-        const avNum = parseInt(av);
-        const hvNum = parseInt(hv);
-        
-        if (avNum >= 600 && avNum <= 2400 && hvNum >= 1000 && hvNum <= 2200) {
-            calcularMedidas();
-        }
+    // Verificar que ancho y alto tengan valores válidos
+    if (!av || !hv || av === '' || hv === '') {
+        console.log('No hay medidas ingresadas');
+        return;
+    }
+    
+    const avNum = parseInt(av);
+    const hvNum = parseInt(hv);
+    
+    if (avNum >= 600 && avNum <= 2400 && hvNum >= 1000 && hvNum <= 2200) {
+        console.log('Actualizando por cambio en select...');
+        calcularMedidas();
+    } else {
+        console.log('Medidas fuera de rango');
     }
 }
 
@@ -268,24 +273,24 @@ function nuevaCalculo() {
 // INICIALIZACIÓN
 // ==============================================
 document.addEventListener('DOMContentLoaded', function() {
-    // Material selector
+    // Mostrar material seleccionado
     document.getElementById('comboMaterial').addEventListener('change', function() {
         document.getElementById('materialSeleccionado').textContent = this.value;
-        actualizarAutomatico();
+        actualizarPorSelect();
     });
     
     // Espesor
     document.getElementById('comboEspesor').addEventListener('change', function() {
-        actualizarAutomatico();
+        actualizarPorSelect();
     });
     
     // Tapacantos
     document.getElementById('comboTapacantoLargo').addEventListener('change', function() {
-        actualizarAutomatico();
+        actualizarPorSelect();
     });
     
     document.getElementById('comboTapacantoAncho').addEventListener('change', function() {
-        actualizarAutomatico();
+        actualizarPorSelect();
     });
     
     // Inputs
@@ -299,8 +304,7 @@ document.addEventListener('DOMContentLoaded', function() {
         validarEntradaHv();
     });
     
-    // Mostrar mensaje de bienvenida
     setTimeout(() => {
-        mostrarToast('info', 'Bienvenido', 'Sistema CA-7025. Los cambios en materiales y tapacantos se actualizan automáticamente.');
+        mostrarToast('info', 'Bienvenido', 'Sistema CA-7025. Los cambios en selects actualizan los resultados.');
     }, 1000);
 });

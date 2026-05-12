@@ -46,7 +46,7 @@ function mostrarAyuda() {
 // ==============================================
 // FUNCIONES DE VALIDACIÓN
 // ==============================================
-function validarEntradaAv() {
+function validarEntradaAv(mostrarToastError = false) {
     const input = document.getElementById('entradaAv');
     const value = parseInt(input.value);
     const message = document.getElementById('avMessage');
@@ -56,6 +56,9 @@ function validarEntradaAv() {
         input.className = 'form-control warning';
         icon.className = 'input-icon fas fa-exclamation-triangle';
         message.className = 'validation-message';
+        if (mostrarToastError) {
+            mostrarToast('warning', 'Campo vacío', 'Ingresa el ancho del vano (600-2400 mm)');
+        }
         return false;
     }
     
@@ -64,6 +67,9 @@ function validarEntradaAv() {
         icon.className = 'input-icon error fas fa-times-circle';
         message.className = 'validation-message error';
         message.textContent = `❌ Error: ${value} mm fuera de rango (600-2400 mm)`;
+        if (mostrarToastError) {
+            mostrarToast('error', 'Error de validación', `Ancho ${value} mm fuera de rango (600-2400 mm)`);
+        }
         return false;
     } else {
         input.className = 'form-control valid';
@@ -74,7 +80,7 @@ function validarEntradaAv() {
     }
 }
 
-function validarEntradaHv() {
+function validarEntradaHv(mostrarToastError = false) {
     const input = document.getElementById('entradaHv');
     const value = parseInt(input.value);
     const message = document.getElementById('hvMessage');
@@ -84,6 +90,9 @@ function validarEntradaHv() {
         input.className = 'form-control warning';
         icon.className = 'input-icon fas fa-exclamation-triangle';
         message.className = 'validation-message';
+        if (mostrarToastError) {
+            mostrarToast('warning', 'Campo vacío', 'Ingresa la altura del vano (1000-2200 mm)');
+        }
         return false;
     }
     
@@ -92,6 +101,9 @@ function validarEntradaHv() {
         icon.className = 'input-icon error fas fa-times-circle';
         message.className = 'validation-message error';
         message.textContent = `❌ Error: ${value} mm fuera de rango (1000-2200 mm)`;
+        if (mostrarToastError) {
+            mostrarToast('error', 'Error de validación', `Altura ${value} mm fuera de rango (1000-2200 mm)`);
+        }
         return false;
     } else {
         input.className = 'form-control valid';
@@ -155,15 +167,11 @@ function mostrarMensajePorSelect() {
     ultimoSelectCambiado = null;
 }
 
-async function calcularMedidas() {
-    // Forzar reset si se llama directamente desde el botón
-    if (!ultimoSelectCambiado) {
-        // No hacer nada especial
-    }
+async function calcularMedidas(mostrarToastVacio = false) {
     if (calculando) return;
     
-    const avValido = validarEntradaAv();
-    const hvValido = validarEntradaHv();
+    const avValido = validarEntradaAv(mostrarToastVacio);
+    const hvValido = validarEntradaHv(mostrarToastVacio);
     
     if (!avValido || !hvValido) {
         ultimoSelectCambiado = null;
@@ -215,16 +223,19 @@ async function calcularMedidas() {
         document.getElementById('resultA1').textContent = tapData.anchoTapacanto;
         document.getElementById('resultA2').textContent = tapData.anchoTapacanto;
         
-        // Mostrar mensaje según el select que cambió
+        // Mostrar mensaje según el select que cambió (si aplica)
         if (ultimoSelectCambiado !== null) {
             mostrarMensajePorSelect();
-        } else {
+        } else if (mostrarToastVacio) {
+            // Solo mostrar "Cálculo exitoso" si fue por clic en el botón
             mostrarToast('success', 'Cálculo exitoso', `AP: ${data.ap} mm, HP: ${data.hp} mm`);
         }
         
     } catch (error) {
         console.error('Error:', error);
-        mostrarToast('error', 'Error de conexión', error.message);
+        if (mostrarToastVacio) {
+            mostrarToast('error', 'Error de conexión', error.message);
+        }
         ultimoSelectCambiado = null;
     } finally {
         calculando = false;
@@ -244,7 +255,7 @@ function actualizarPorSelect() {
     const hvNum = parseInt(hv);
     
     if (avNum >= 600 && avNum <= 2400 && hvNum >= 1000 && hvNum <= 2200) {
-        calcularMedidas();
+        calcularMedidas(false);
     } else {
         ultimoSelectCambiado = null;
     }
@@ -351,18 +362,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Inputs: Ancho y Alto
     document.getElementById('entradaAv').addEventListener('input', function() {
         limitar4Digitos(this);
-        validarEntradaAv();
+        validarEntradaAv(false);
         ultimoSelectCambiado = null;
     });
     
     document.getElementById('entradaHv').addEventListener('input', function() {
         limitar4Digitos(this);
-        validarEntradaHv();
+        validarEntradaHv(false);
         ultimoSelectCambiado = null;
     });
     
     // Mensaje de bienvenida
     setTimeout(() => {
-        mostrarToast('info', 'Bienvenido', 'Sistema CA-7025. Ingrese las medidas de ancho y altura interior de su mueble.');
+        mostrarToast('info', 'Bienvenido', 'Sistema CA-7025. Los cambios en selects actualizan los resultados.');
     }, 1000);
 });

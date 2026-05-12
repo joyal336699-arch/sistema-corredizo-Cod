@@ -363,6 +363,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Mensaje de bienvenida
     setTimeout(() => {
-        mostrarToast('info', 'Bienvenido', 'Sistema CA-7025. Los cambios en selects actualizan los resultados.');
+        mostrarToast('info', 'Bienvenido', 'Sistema CA-7025. Ingrese las medidas de ancho y altura interior de su mueble.');
     }, 1000);
 });

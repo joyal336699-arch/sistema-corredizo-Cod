@@ -11,6 +11,8 @@ let ultimoSelectCambiado = null;
 // ==============================================
 function mostrarToast(tipo, titulo, mensaje) {
     const container = document.getElementById('toastContainer');
+    const toastsExistentes = container.querySelectorAll('.toast');
+    toastsExistentes.forEach(toast => toast.remove());
     
     const toast = document.createElement('div');
     toast.className = `toast ${tipo}`;

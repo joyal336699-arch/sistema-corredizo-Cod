@@ -195,12 +195,14 @@ function actualizarAutomatico() {
     const av = document.getElementById('entradaAv').value;
     const hv = document.getElementById('entradaHv').value;
     
+    // Solo actualizar si ya hay medidas válidas ingresadas
     if (av && hv && av !== '' && hv !== '') {
         const avNum = parseInt(av);
         const hvNum = parseInt(hv);
         
+        // Verificar rangos antes de llamar
         if (avNum >= 600 && avNum <= 2400 && hvNum >= 1000 && hvNum <= 2200) {
-            calcularMedidas(false);  // ← false = NO mostrar mensaje
+            calcularMedidas();
         }
     }
 }

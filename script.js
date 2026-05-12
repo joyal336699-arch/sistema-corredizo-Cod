@@ -45,10 +45,6 @@ function mostrarAyuda() {
 // ==============================================
 function validarEntradaAv() {
     const input = document.getElementById('entradaAv');
-     // Limitar a 4 dígitos
-    if (input.value.length > 4) {
-        input.value = input.value.slice(0, 4);
-    }
     const value = parseInt(input.value);
     const message = document.getElementById('avMessage');
     const icon = input.parentElement.querySelector('.input-icon');
@@ -77,10 +73,6 @@ function validarEntradaAv() {
 
 function validarEntradaHv() {
     const input = document.getElementById('entradaHv');
-     // Limitar a 4 dígitos
-    if (input.value.length > 4) {
-        input.value = input.value.slice(0, 4);
-    }
     const value = parseInt(input.value);
     const message = document.getElementById('hvMessage');
     const icon = input.parentElement.querySelector('.input-icon');

@@ -2,7 +2,7 @@
 // CONFIGURACIÓN DEL BACKEND
 // ==============================================
 // ⚠️ CAMBIAR ESTA URL CUANDO DESPLIEGUES EN RENDER
-const API_BASE_URL = 'http://localhost:8080';  // ← Cambiar por la URL de Render
+const API_BASE_URL = 'https://sistema-corrediza-ca7025.onrender.com'; 
 
 // ==============================================
 // SISTEMA DE NOTIFICACIONES TOAST (COMPLETO)

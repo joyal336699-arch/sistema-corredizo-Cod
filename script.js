@@ -286,7 +286,7 @@ async function generarReporte() {
         largoTapacanto2: document.getElementById('resultL2').textContent,
         anchoTapacanto1: document.getElementById('resultA1').textContent,
         anchoTapacanto2: document.getElementById('resultA2').textContent,
-        fecha: new Date().toLocaleString()
+        fecha: new Date().toLocaleString('es-PE', { timeZone: 'America/Lima', hour12: false })
     };
     
     try {

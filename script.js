@@ -308,7 +308,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Configurar eventos automáticos para selects
-    configurarEventosAutomaticos();
+    //configurarEventosAutomaticos();
     
     // Mostrar mensaje de bienvenida
     setTimeout(() => {

@@ -1,14 +1,14 @@
 // ==============================================
 // CONFIGURACIÓN DEL BACKEND
 // ==============================================
-// ⚠️ CAMBIAR ESTA URL CUANDO DESPLIEGUES EN RENDER
-const API_BASE_URL = 'https://sistema-corrediza-ca7025.onrender.com'; 
+const API_BASE_URL = 'https://sistema-corrediza-ca7025.onrender.com';
 
 // ==============================================
-// SISTEMA DE NOTIFICACIONES TOAST (COMPLETO)
+// SISTEMA DE NOTIFICACIONES TOAST
 // ==============================================
 function mostrarToast(tipo, titulo, mensaje) {
     const container = document.getElementById('toastContainer');
+    
     const toast = document.createElement('div');
     toast.className = `toast ${tipo}`;
     
@@ -23,7 +23,7 @@ function mostrarToast(tipo, titulo, mensaje) {
             <div class="toast-title">${titulo}</div>
             <div class="toast-message">${mensaje}</div>
         </div>
-        <button class="toast-close" onclick="this.parentElement.classList.remove('show'); setTimeout(() => this.parentElement.remove(), 300)">
+        <button class="toast-close" onclick="this.parentElement.remove()">
             <i class="fas fa-times"></i>
         </button>
     `;
@@ -32,22 +32,16 @@ function mostrarToast(tipo, titulo, mensaje) {
     setTimeout(() => toast.classList.add('show'), 10);
     setTimeout(() => {
         toast.classList.remove('show');
-        setTimeout(() => { if (toast.parentNode) toast.remove(); }, 300);
+        setTimeout(() => toast.remove(), 300);
     }, 5000);
-    
-    const toasts = container.querySelectorAll('.toast');
-    if (toasts.length > 3) {
-        toasts[0].classList.remove('show');
-        setTimeout(() => { if (toasts[0].parentNode) toasts[0].remove(); }, 300);
-    }
 }
 
 function mostrarAyuda() {
-    mostrarToast('info', 'Ayuda', 'Ingresa las medidas del vano (Ancho 600-2400 mm, Altura 1000-2200 mm) y selecciona los materiales. Los cálculos se realizan en el servidor.');
+    mostrarToast('info', 'Ayuda', 'Ingresa las medidas del vano (Ancho 600-2400 mm, Altura 1000-2200 mm)');
 }
 
 // ==============================================
-// VALIDACIONES (SOLO UI - MEJORA LA EXPERIENCIA)
+// VALIDACIONES DE UI
 // ==============================================
 function validarEntradaAv() {
     const input = document.getElementById('entradaAv');
@@ -105,43 +99,20 @@ function validarEntradaHv() {
     }
 }
 
-function validarCampos() {
-    const avValido = validarEntradaAv();
-    const hvValido = validarEntradaHv();
-    return { valido: avValido && hvValido };
-}
-
 // ==============================================
-// FUNCIONES DE ACTUALIZACIÓN DE UI (SOLO VISUAL)
-// ==============================================
-function actualizarUIconResultados(datos) {
-    document.getElementById('resultAv').textContent = datos.av + ' mm';
-    document.getElementById('resultHv').textContent = datos.hv + ' mm';
-    document.getElementById('resultAp').textContent = datos.ap + ' mm';
-    document.getElementById('resultHp').textContent = datos.hp + ' mm';
-    document.getElementById('resultRiel').textContent = datos.riel + ' mm';
-    document.getElementById('resultEsp').textContent = datos.espesor;
-    document.getElementById('materialSeleccionado').textContent = datos.material;
-}
-
-function actualizarUIconTapacantos(datos) {
-    document.getElementById('resultL').textContent = datos.largoPuertaCorte;
-    document.getElementById('resultA').textContent = datos.anchoPuertaCorte;
-    document.getElementById('resultL1').textContent = datos.largoTapacanto;
-    document.getElementById('resultL2').textContent = datos.largoTapacanto;
-    document.getElementById('resultA1').textContent = datos.anchoTapacanto;
-    document.getElementById('resultA2').textContent = datos.anchoTapacanto;
-}
-
-// ==============================================
-// FUNCIONES QUE LLAMAN AL BACKEND
+// FUNCIONES PRINCIPALES
 // ==============================================
 async function calcularMedidas() {
-    if (!validarCampos().valido) {
+    // Validar campos
+    const avValido = validarEntradaAv();
+    const hvValido = validarEntradaHv();
+    
+    if (!avValido || !hvValido) {
         mostrarToast('error', 'Error de validación', 'Corrige las medidas antes de calcular');
         return;
     }
     
+    // Obtener valores
     const av = parseInt(document.getElementById('entradaAv').value);
     const hv = parseInt(document.getElementById('entradaHv').value);
     const material = document.getElementById('comboMaterial').value;
@@ -149,24 +120,36 @@ async function calcularMedidas() {
     const tapacantoLargo = parseFloat(document.getElementById('comboTapacantoLargo').value.replace(' mm', ''));
     const tapacantoAncho = parseFloat(document.getElementById('comboTapacantoAncho').value.replace(' mm', ''));
     
+    // Mostrar loading en el botón
     const button = event.target;
     const originalText = button.innerHTML;
     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculando...';
     button.disabled = true;
     
     try {
-        // 1. Calcular medidas básicas (backend)
+        // 1. Calcular medidas básicas
         const responseMedidas = await fetch(`${API_BASE_URL}/api/calcular`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ av, hv, material, espesor })
         });
         
-        if (!responseMedidas.ok) throw new Error('Error en el servidor');
-        const medidas = await responseMedidas.json();
-        actualizarUIconResultados(medidas);
+        if (!responseMedidas.ok) {
+            throw new Error(`Error ${responseMedidas.status}: ${responseMedidas.statusText}`);
+        }
         
-        // 2. Calcular tapacantos (backend)
+        const medidas = await responseMedidas.json();
+        
+        // Actualizar UI con resultados
+        document.getElementById('resultAv').textContent = medidas.av + ' mm';
+        document.getElementById('resultHv').textContent = medidas.hv + ' mm';
+        document.getElementById('resultAp').textContent = medidas.ap + ' mm';
+        document.getElementById('resultHp').textContent = medidas.hp + ' mm';
+        document.getElementById('resultRiel').textContent = medidas.riel + ' mm';
+        document.getElementById('resultEsp').textContent = medidas.espesor;
+        document.getElementById('materialSeleccionado').textContent = medidas.material;
+        
+        // 2. Calcular tapacantos
         const responseTapacantos = await fetch(`${API_BASE_URL}/api/tapacantos`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -178,15 +161,24 @@ async function calcularMedidas() {
             })
         });
         
-        if (!responseTapacantos.ok) throw new Error('Error en cálculo de tapacantos');
-        const tapacantos = await responseTapacantos.json();
-        actualizarUIconTapacantos(tapacantos);
+        if (!responseTapacantos.ok) {
+            throw new Error(`Error ${responseTapacantos.status} en cálculo de tapacantos`);
+        }
         
-        mostrarToast('success', 'Cálculo exitoso', `Medidas calculadas: AP=${medidas.ap}mm, HP=${medidas.hp}mm`);
+        const tapacantos = await responseTapacantos.json();
+        
+        document.getElementById('resultL').textContent = tapacantos.largoPuertaCorte;
+        document.getElementById('resultA').textContent = tapacantos.anchoPuertaCorte;
+        document.getElementById('resultL1').textContent = tapacantos.largoTapacanto;
+        document.getElementById('resultL2').textContent = tapacantos.largoTapacanto;
+        document.getElementById('resultA1').textContent = tapacantos.anchoTapacanto;
+        document.getElementById('resultA2').textContent = tapacantos.anchoTapacanto;
+        
+        mostrarToast('success', 'Cálculo exitoso', `AP: ${medidas.ap} mm, HP: ${medidas.hp} mm`);
         
     } catch (error) {
-        console.error('Error:', error);
-        mostrarToast('error', 'Error de conexión', 'No se pudo conectar con el servidor backend. Verifica que esté ejecutándose.');
+        console.error('Error detallado:', error);
+        mostrarToast('error', 'Error de conexión', `No se pudo conectar con el backend: ${error.message}`);
     } finally {
         button.innerHTML = originalText;
         button.disabled = false;
@@ -194,45 +186,41 @@ async function calcularMedidas() {
 }
 
 async function generarReporte() {
-    const av = document.getElementById('entradaAv').value;
-    const hv = document.getElementById('entradaHv').value;
-    const material = document.getElementById('comboMaterial').value;
-    const espesor = document.getElementById('comboEspesor').value;
-    const tapacantoLargo = document.getElementById('comboTapacantoLargo').value;
-    const tapacantoAncho = document.getElementById('comboTapacantoAncho').value;
+    const ap = document.getElementById('resultAp').textContent.replace(' mm', '');
+    const hp = document.getElementById('resultHp').textContent.replace(' mm', '');
     
-    const resultAv = document.getElementById('resultAv').textContent;
-    const resultHv = document.getElementById('resultHv').textContent;
-    const resultAp = document.getElementById('resultAp').textContent;
-    const resultHp = document.getElementById('resultHp').textContent;
-    const resultEsp = document.getElementById('resultEsp').textContent;
-    const resultL = document.getElementById('resultL').textContent;
-    const resultA = document.getElementById('resultA').textContent;
-    const resultL1 = document.getElementById('resultL1').textContent;
-    const resultL2 = document.getElementById('resultL2').textContent;
-    const resultA1 = document.getElementById('resultA1').textContent;
-    const resultA2 = document.getElementById('resultA2').textContent;
-    const resultRiel = document.getElementById('resultRiel').textContent;
-    
-    if (resultAp === '....' || resultHp === '....') {
+    if (ap === '....' || hp === '....') {
         mostrarToast('warning', 'Sin datos', 'Primero calcula las medidas');
         return;
     }
+    
+    const datosReporte = {
+        av: parseInt(document.getElementById('entradaAv').value),
+        hv: parseInt(document.getElementById('entradaHv').value),
+        ap: parseInt(ap),
+        hp: parseInt(hp),
+        riel: parseInt(document.getElementById('resultRiel').textContent.replace(' mm', '')),
+        material: document.getElementById('comboMaterial').value,
+        espesor: parseInt(document.getElementById('resultEsp').textContent),
+        tapacantoLargo: document.getElementById('comboTapacantoLargo').value,
+        tapacantoAncho: document.getElementById('comboTapacantoAncho').value,
+        largoPuertaCorte: parseInt(document.getElementById('resultL').textContent),
+        anchoPuertaCorte: parseInt(document.getElementById('resultA').textContent),
+        largoTapacanto1: document.getElementById('resultL1').textContent,
+        largoTapacanto2: document.getElementById('resultL2').textContent,
+        anchoTapacanto1: document.getElementById('resultA1').textContent,
+        anchoTapacanto2: document.getElementById('resultA2').textContent,
+        fecha: new Date().toLocaleString()
+    };
     
     try {
         const response = await fetch(`${API_BASE_URL}/api/reporte`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                av: parseInt(av), hv: parseInt(hv), ap: parseInt(resultAp), hp: parseInt(resultHp),
-                riel: parseInt(resultRiel), material: material, espesor: parseInt(resultEsp),
-                tapacantoLargo: tapacantoLargo, tapacantoAncho: tapacantoAncho,
-                largoPuertaCorte: parseInt(resultL), anchoPuertaCorte: parseInt(resultA),
-                largoTapacanto1: resultL1, largoTapacanto2: resultL2,
-                anchoTapacanto1: resultA1, anchoTapacanto2: resultA2,
-                fecha: new Date().toLocaleString()
-            })
+            body: JSON.stringify(datosReporte)
         });
+        
+        if (!response.ok) throw new Error('Error al generar reporte');
         
         const reporteHTML = await response.text();
         const ventana = window.open('', '_blank');
@@ -256,13 +244,6 @@ function nuevaCalculo() {
     document.getElementById('comboTapacantoAncho').selectedIndex = 5;
     document.getElementById('materialSeleccionado').textContent = 'Melamina';
     
-    const avIcon = document.getElementById('entradaAv').parentElement.querySelector('.input-icon');
-    const hvIcon = document.getElementById('entradaHv').parentElement.querySelector('.input-icon');
-    avIcon.className = 'input-icon fas fa-exclamation-triangle';
-    hvIcon.className = 'input-icon fas fa-exclamation-triangle';
-    document.getElementById('avMessage').className = 'validation-message';
-    document.getElementById('hvMessage').className = 'validation-message';
-    
     const resultados = ['resultAv', 'resultHv', 'resultAp', 'resultHp', 'resultEsp',
         'resultL', 'resultA', 'resultL1', 'resultL2', 'resultA1', 'resultA2', 'resultRiel'];
     resultados.forEach(id => { document.getElementById(id).textContent = '....'; });
@@ -272,22 +253,32 @@ function nuevaCalculo() {
 }
 
 // ==============================================
+// VERIFICAR CONEXIÓN AL INICIAR
+// ==============================================
+async function verificarConexion() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/health`);
+        if (response.ok) {
+            mostrarToast('success', 'Conectado', 'Backend disponible');
+        } else {
+            mostrarToast('warning', 'Advertencia', 'Backend no responde correctamente');
+        }
+    } catch (error) {
+        mostrarToast('error', 'Sin conexión', 'No se pudo conectar con el backend');
+    }
+}
+
+// ==============================================
 // EVENT LISTENERS
 // ==============================================
-document.getElementById('comboMaterial').addEventListener('change', function() {
-    document.getElementById('materialSeleccionado').textContent = this.value;
-});
-
-document.getElementById('entradaAv').addEventListener('input', validarEntradaAv);
-document.getElementById('entradaHv').addEventListener('input', validarEntradaHv);
-
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('comboMaterial').selectedIndex = 0;
-    document.getElementById('comboEspesor').selectedIndex = 1;
-    document.getElementById('comboTapacantoLargo').selectedIndex = 5;
-    document.getElementById('comboTapacantoAncho').selectedIndex = 5;
+    document.getElementById('comboMaterial').addEventListener('change', function() {
+        document.getElementById('materialSeleccionado').textContent = this.value;
+    });
     
-    setTimeout(() => {
-        mostrarToast('info', 'Bienvenido', 'Sistema CA-7025. Conectado al backend Java.');
-    }, 1000);
+    document.getElementById('entradaAv').addEventListener('input', validarEntradaAv);
+    document.getElementById('entradaHv').addEventListener('input', validarEntradaHv);
+    
+    // Verificar conexión al cargar
+    setTimeout(verificarConexion, 1000);
 });

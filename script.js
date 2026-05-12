@@ -117,15 +117,14 @@ function obtenerValorTapacanto(texto) {
 
 let calculando = false;
 
-// Función para mostrar mensaje según el select que cambió
-function mostrarMensajePorSelect(tipoSelect) {
-    // Verificar si ya hay un resultado previo (AP no debe ser '....')
+function mostrarMensajePorSelect() {
+    // Verificar si ya hay un resultado previo
     const apActual = document.getElementById('resultAp').textContent;
     if (apActual === '....') {
-        return; // No hay resultado previo, no mostrar mensaje
+        return;
     }
     
-    switch(tipoSelect) {
+    switch(ultimoSelectCambiado) {
         case 'material':
             const material = document.getElementById('comboMaterial').value;
             mostrarToast('info', 'Cambio detectado', `Cambio de material: ${material}`);
@@ -151,6 +150,9 @@ function mostrarMensajePorSelect(tipoSelect) {
         default:
             break;
     }
+    
+    // Reset después de mostrar
+    ultimoSelectCambiado = null;
 }
 
 async function calcularMedidas() {
@@ -160,6 +162,7 @@ async function calcularMedidas() {
     const hvValido = validarEntradaHv();
     
     if (!avValido || !hvValido) {
+        ultimoSelectCambiado = null;
         return;
     }
     
@@ -183,7 +186,6 @@ async function calcularMedidas() {
         
         const data = await response.json();
         
-        // Actualizar UI
         document.getElementById('resultAv').textContent = data.av + ' mm';
         document.getElementById('resultHv').textContent = data.hv + ' mm';
         document.getElementById('resultAp').textContent = data.ap + ' mm';
@@ -192,7 +194,6 @@ async function calcularMedidas() {
         document.getElementById('resultEsp').textContent = data.espesor;
         document.getElementById('materialSeleccionado').textContent = data.material;
         
-        // Calcular tapacantos
         const responseTap = await fetch(`${API_BASE_URL}/api/tapacantos`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -210,10 +211,9 @@ async function calcularMedidas() {
         document.getElementById('resultA1').textContent = tapData.anchoTapacanto;
         document.getElementById('resultA2').textContent = tapData.anchoTapacanto;
         
-        // Mostrar mensaje según el select que cambió (si aplica)
+        // Mostrar mensaje según el select que cambió
         if (ultimoSelectCambiado !== null) {
-            mostrarMensajePorSelect(ultimoSelectCambiado);
-            ultimoSelectCambiado = null; // Reset después de mostrar
+            mostrarMensajePorSelect();
         } else {
             mostrarToast('success', 'Cálculo exitoso', `AP: ${data.ap} mm, HP: ${data.hp} mm`);
         }
@@ -227,7 +227,6 @@ async function calcularMedidas() {
     }
 }
 
-// Función para actualizar automáticamente al cambiar selects
 function actualizarPorSelect() {
     const av = document.getElementById('entradaAv').value;
     const hv = document.getElementById('entradaHv').value;
@@ -313,44 +312,42 @@ function nuevaCalculo() {
     
     document.getElementById('entradaAv').focus();
     mostrarToast('success', 'Nuevo cálculo', 'Formulario reiniciado');
-    
-    // Resetear la variable del último select
     ultimoSelectCambiado = null;
 }
 
 // ==============================================
-// INICIALIZACIÓN
+// INICIALIZACIÓN (EVENTOS)
 // ==============================================
 document.addEventListener('DOMContentLoaded', function() {
-    // Mostrar material seleccionado
+    // Select: Material
     document.getElementById('comboMaterial').addEventListener('change', function() {
         document.getElementById('materialSeleccionado').textContent = this.value;
         ultimoSelectCambiado = 'material';
         actualizarPorSelect();
     });
     
-    // Espesor
+    // Select: Espesor
     document.getElementById('comboEspesor').addEventListener('change', function() {
         ultimoSelectCambiado = 'espesor';
         actualizarPorSelect();
     });
     
-    // Tapacantos
+    // Select: Tapacanto Largo
     document.getElementById('comboTapacantoLargo').addEventListener('change', function() {
         ultimoSelectCambiado = 'tapacantoLargo';
         actualizarPorSelect();
     });
     
+    // Select: Tapacanto Ancho
     document.getElementById('comboTapacantoAncho').addEventListener('change', function() {
         ultimoSelectCambiado = 'tapacantoAncho';
         actualizarPorSelect();
     });
     
-    // Inputs
+    // Inputs: Ancho y Alto
     document.getElementById('entradaAv').addEventListener('input', function() {
         limitar4Digitos(this);
         validarEntradaAv();
-        // Resetear ultimoSelectCambiado cuando se modifican los inputs
         ultimoSelectCambiado = null;
     });
     
@@ -360,6 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
         ultimoSelectCambiado = null;
     });
     
+    // Mensaje de bienvenida
     setTimeout(() => {
         mostrarToast('info', 'Bienvenido', 'Sistema CA-7025. Los cambios en selects actualizan los resultados.');
     }, 1000);

@@ -264,6 +264,8 @@ function actualizarPorSelect() {
 }
 
 async function generarReporte() {
+    const fechaEnviada = new Date().toLocaleString();
+    console.log('Fecha enviada al backend:', fechaEnviada);
     const ap = document.getElementById('resultAp').textContent;
     if (ap === '....') {
         mostrarToast('warning', 'Sin datos', 'Primero calcula las medidas');

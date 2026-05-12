@@ -58,7 +58,7 @@ function validarEntradaAv() {
         message.className = 'validation-message';
          if (mostrarToastError) {
         mostrarToast('warning', 'Campo vacío', 'Ingresa el ancho del vano (600-2400 mm)');
-    }
+        }
         return false;
     }
     

@@ -300,3 +300,4 @@ document.addEventListener('DOMContentLoaded', function() {
     // Verificar conexión al cargar
     setTimeout(verificarConexion, 1000);
 });
+}

@@ -264,8 +264,6 @@ function actualizarPorSelect() {
 }
 
 async function generarReporte() {
-    const fechaEnviada = new Date().toLocaleString();
-    console.log('Fecha enviada al backend:', fechaEnviada);
     const ap = document.getElementById('resultAp').textContent;
     if (ap === '....') {
         mostrarToast('warning', 'Sin datos', 'Primero calcula las medidas');
@@ -299,12 +297,16 @@ async function generarReporte() {
         });
         
         const html = await response.text();
+        
+        // Abrir ventana con título personalizado
         const ventana = window.open('', '_blank');
         ventana.document.write(html);
-        ventana.document.title = 'Reporte CA-7025';  //
+        ventana.document.title = 'Reporte CA-7025 - Puertas Corredizas';
         ventana.document.close();
+        
         mostrarToast('success', 'Reporte generado', 'El reporte se abrió en una nueva ventana');
     } catch (error) {
+        console.error('Error:', error);
         mostrarToast('error', 'Error', 'No se pudo generar el reporte');
     }
 }

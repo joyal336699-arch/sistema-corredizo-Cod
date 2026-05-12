@@ -201,10 +201,6 @@ function actualizarAutomatico() {
         const avNum = parseInt(av);
         const hvNum = parseInt(hv);
         
-        // Verificar rangos antes de llamar
-        if (avNum >= 600 && avNum <= 2400 && hvNum >= 1000 && hvNum <= 2200) {
-            calcularMedidas();
-        }
     }
 }
 

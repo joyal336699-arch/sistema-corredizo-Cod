@@ -6,6 +6,18 @@ const API_BASE_URL = 'https://sistema-corrediza-ca7025.onrender.com';
 // ==============================================
 // SISTEMA DE NOTIFICACIONES TOAST
 // ==============================================
+// Actualizar todo cuando cambian los valores de los selects
+function actualizarTodo() {
+    // Verificar si ya hay resultados calculados
+    const av = document.getElementById('resultAv').textContent;
+    const hv = document.getElementById('resultHv').textContent;
+    
+    if (av !== '....' && hv !== '....') {
+        // Si ya hay medidas calculadas, recalcular automáticamente
+        calcularMedidas();
+    }
+}
+
 function mostrarToast(tipo, titulo, mensaje) {
     const container = document.getElementById('toastContainer');
     
@@ -278,6 +290,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     document.getElementById('entradaAv').addEventListener('input', validarEntradaAv);
     document.getElementById('entradaHv').addEventListener('input', validarEntradaHv);
+
+     // Agregar eventos para actualización automática
+    document.getElementById('comboMaterial').addEventListener('change', actualizarTodo);
+    document.getElementById('comboEspesor').addEventListener('change', actualizarTodo);
+    document.getElementById('comboTapacantoLargo').addEventListener('change', actualizarTodo);
+    document.getElementById('comboTapacantoAncho').addEventListener('change', actualizarTodo);
+});
     
     // Verificar conexión al cargar
     setTimeout(verificarConexion, 1000);

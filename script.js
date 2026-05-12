@@ -156,6 +156,10 @@ function mostrarMensajePorSelect() {
 }
 
 async function calcularMedidas() {
+    // Forzar reset si se llama directamente desde el botón
+    if (!ultimoSelectCambiado) {
+        // No hacer nada especial
+    }
     if (calculando) return;
     
     const avValido = validarEntradaAv();

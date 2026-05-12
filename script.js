@@ -41,7 +41,7 @@ function mostrarAyuda() {
 }
 
 // ==============================================
-// VALIDACIONES DE UI
+// FUNCIONES DE VALIDACIÓN
 // ==============================================
 function validarEntradaAv() {
     const input = document.getElementById('entradaAv');
@@ -102,115 +102,101 @@ function validarEntradaHv() {
 // ==============================================
 // FUNCIONES PRINCIPALES
 // ==============================================
+function obtenerValorTapacanto(texto) {
+    return parseFloat(texto.replace(' mm', ''));
+}
+
+// Variable para evitar múltiples llamadas simultáneas
+let calculando = false;
+
 async function calcularMedidas() {
-    // Validar campos
+    if (calculando) return;
+    
     const avValido = validarEntradaAv();
     const hvValido = validarEntradaHv();
     
     if (!avValido || !hvValido) {
-        mostrarToast('error', 'Error de validación', 'Corrige las medidas antes de calcular');
         return;
     }
     
-    // Obtener valores
     const av = parseInt(document.getElementById('entradaAv').value);
     const hv = parseInt(document.getElementById('entradaHv').value);
     const material = document.getElementById('comboMaterial').value;
     const espesor = parseInt(document.getElementById('comboEspesor').value.replace(' mm', ''));
-    const tapacantoLargo = parseFloat(document.getElementById('comboTapacantoLargo').value.replace(' mm', ''));
-    const tapacantoAncho = parseFloat(document.getElementById('comboTapacantoAncho').value.replace(' mm', ''));
+    const tapacantoLargo = obtenerValorTapacanto(document.getElementById('comboTapacantoLargo').value);
+    const tapacantoAncho = obtenerValorTapacanto(document.getElementById('comboTapacantoAncho').value);
     
-    // Mostrar loading en el botón
-    const button = event.target;
-    const originalText = button.innerHTML;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculando...';
-    button.disabled = true;
+    calculando = true;
     
     try {
-        // 1. Calcular medidas básicas
-        const responseMedidas = await fetch(`${API_BASE_URL}/api/calcular`, {
+        // Calcular medidas básicas
+        const response = await fetch(`${API_BASE_URL}/api/calcular`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ av, hv, material, espesor })
         });
         
-        if (!responseMedidas.ok) {
-            throw new Error(`Error ${responseMedidas.status}: ${responseMedidas.statusText}`);
-        }
+        if (!response.ok) throw new Error(`Error ${response.status}`);
+        const data = await response.json();
         
-        const medidas = await responseMedidas.json();
+        // Actualizar UI
+        document.getElementById('resultAv').textContent = data.av + ' mm';
+        document.getElementById('resultHv').textContent = data.hv + ' mm';
+        document.getElementById('resultAp').textContent = data.ap + ' mm';
+        document.getElementById('resultHp').textContent = data.hp + ' mm';
+        document.getElementById('resultRiel').textContent = data.riel + ' mm';
+        document.getElementById('resultEsp').textContent = data.espesor;
+        document.getElementById('materialSeleccionado').textContent = data.material;
         
-        // Actualizar UI con resultados
-        document.getElementById('resultAv').textContent = medidas.av + ' mm';
-        document.getElementById('resultHv').textContent = medidas.hv + ' mm';
-        document.getElementById('resultAp').textContent = medidas.ap + ' mm';
-        document.getElementById('resultHp').textContent = medidas.hp + ' mm';
-        document.getElementById('resultRiel').textContent = medidas.riel + ' mm';
-        document.getElementById('resultEsp').textContent = medidas.espesor;
-        document.getElementById('materialSeleccionado').textContent = medidas.material;
-        
-        // 2. Calcular tapacantos
-        const responseTapacantos = await fetch(`${API_BASE_URL}/api/tapacantos`, {
+        // Calcular tapacantos
+        const responseTap = await fetch(`${API_BASE_URL}/api/tapacantos`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                ap: medidas.ap,
-                hp: medidas.hp,
-                tapacantoLargo: tapacantoLargo,
-                tapacantoAncho: tapacantoAncho
-            })
+            body: JSON.stringify({ ap: data.ap, hp: data.hp, tapacantoLargo, tapacantoAncho })
         });
         
-        if (!responseTapacantos.ok) {
-            throw new Error(`Error ${responseTapacantos.status} en cálculo de tapacantos`);
-        }
+        if (!responseTap.ok) throw new Error(`Error ${responseTap.status}`);
+        const tapData = await responseTap.json();
         
-        const tapacantos = await responseTapacantos.json();
-        
-        document.getElementById('resultL').textContent = tapacantos.largoPuertaCorte;
-        document.getElementById('resultA').textContent = tapacantos.anchoPuertaCorte;
-        document.getElementById('resultL1').textContent = tapacantos.largoTapacanto;
-        document.getElementById('resultL2').textContent = tapacantos.largoTapacanto;
-        document.getElementById('resultA1').textContent = tapacantos.anchoTapacanto;
-        document.getElementById('resultA2').textContent = tapacantos.anchoTapacanto;
-        
-        mostrarToast('success', 'Cálculo exitoso', `AP: ${medidas.ap} mm, HP: ${medidas.hp} mm`);
+        document.getElementById('resultL').textContent = tapData.largoPuertaCorte;
+        document.getElementById('resultA').textContent = tapData.anchoPuertaCorte;
+        document.getElementById('resultL1').textContent = tapData.largoTapacanto;
+        document.getElementById('resultL2').textContent = tapData.largoTapacanto;
+        document.getElementById('resultA1').textContent = tapData.anchoTapacanto;
+        document.getElementById('resultA2').textContent = tapData.anchoTapacanto;
         
     } catch (error) {
-        console.error('Error detallado:', error);
-        mostrarToast('error', 'Error de conexión', `No se pudo conectar con el backend: ${error.message}`);
+        console.error('Error:', error);
+        mostrarToast('error', 'Error de conexión', 'No se pudo conectar con el backend');
     } finally {
-        button.innerHTML = originalText;
-        button.disabled = false;
+        calculando = false;
     }
 }
-// Actualizar todo cuando cambian los valores de los selects
-function actualizarTodo() {
-    // Verificar si ya hay resultados calculados
-    const av = document.getElementById('resultAv').textContent;
-    const hv = document.getElementById('resultHv').textContent;
+
+// Función para actualizar automáticamente cuando cambian los selects
+function actualizarAutomatico() {
+    const av = document.getElementById('entradaAv').value;
+    const hv = document.getElementById('entradaHv').value;
     
-    if (av !== '....' && hv !== '....') {
-        // Si ya hay medidas calculadas, recalcular automáticamente
+    // Solo actualizar si ya hay medidas ingresadas
+    if (av && hv && av !== '' && hv !== '') {
         calcularMedidas();
     }
 }
 
 async function generarReporte() {
-    const ap = document.getElementById('resultAp').textContent.replace(' mm', '');
-    const hp = document.getElementById('resultHp').textContent.replace(' mm', '');
-    
-    if (ap === '....' || hp === '....') {
+    const ap = document.getElementById('resultAp').textContent;
+    if (ap === '....') {
         mostrarToast('warning', 'Sin datos', 'Primero calcula las medidas');
         return;
     }
     
-    const datosReporte = {
+    const datos = {
         av: parseInt(document.getElementById('entradaAv').value),
         hv: parseInt(document.getElementById('entradaHv').value),
-        ap: parseInt(ap),
-        hp: parseInt(hp),
-        riel: parseInt(document.getElementById('resultRiel').textContent.replace(' mm', '')),
+        ap: parseInt(document.getElementById('resultAp').textContent),
+        hp: parseInt(document.getElementById('resultHp').textContent),
+        riel: parseInt(document.getElementById('resultRiel').textContent),
         material: document.getElementById('comboMaterial').value,
         espesor: parseInt(document.getElementById('resultEsp').textContent),
         tapacantoLargo: document.getElementById('comboTapacantoLargo').value,
@@ -228,17 +214,14 @@ async function generarReporte() {
         const response = await fetch(`${API_BASE_URL}/api/reporte`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(datosReporte)
+            body: JSON.stringify(datos)
         });
         
-        if (!response.ok) throw new Error('Error al generar reporte');
-        
-        const reporteHTML = await response.text();
-        const ventana = window.open('', '_blank');
-        ventana.document.write(reporteHTML);
+        const html = await response.text();
+        const ventana = window.open();
+        ventana.document.write(html);
         ventana.document.close();
         mostrarToast('success', 'Reporte generado', 'El reporte se abrió en una nueva ventana');
-        
     } catch (error) {
         mostrarToast('error', 'Error', 'No se pudo generar el reporte');
     }
@@ -255,49 +238,51 @@ function nuevaCalculo() {
     document.getElementById('comboTapacantoAncho').selectedIndex = 5;
     document.getElementById('materialSeleccionado').textContent = 'Melamina';
     
-    const resultados = ['resultAv', 'resultHv', 'resultAp', 'resultHp', 'resultEsp',
-        'resultL', 'resultA', 'resultL1', 'resultL2', 'resultA1', 'resultA2', 'resultRiel'];
-    resultados.forEach(id => { document.getElementById(id).textContent = '....'; });
+    const avIcon = document.getElementById('entradaAv').parentElement.querySelector('.input-icon');
+    const hvIcon = document.getElementById('entradaHv').parentElement.querySelector('.input-icon');
+    avIcon.className = 'input-icon fas fa-exclamation-triangle';
+    hvIcon.className = 'input-icon fas fa-exclamation-triangle';
+    document.getElementById('avMessage').className = 'validation-message';
+    document.getElementById('hvMessage').className = 'validation-message';
+    
+    const ids = ['resultAv', 'resultHv', 'resultAp', 'resultHp', 'resultEsp', 'resultL', 'resultA', 'resultL1', 'resultL2', 'resultA1', 'resultA2', 'resultRiel'];
+    ids.forEach(id => document.getElementById(id).textContent = '....');
     
     document.getElementById('entradaAv').focus();
     mostrarToast('success', 'Nuevo cálculo', 'Formulario reiniciado');
 }
 
 // ==============================================
-// VERIFICAR CONEXIÓN AL INICIAR
+// ACTUALIZACIÓN AUTOMÁTICA AL CAMBIAR SELECTS
 // ==============================================
-async function verificarConexion() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/health`);
-        if (response.ok) {
-            mostrarToast('success', 'Conectado', 'Backend disponible');
-        } else {
-            mostrarToast('warning', 'Advertencia', 'Backend no responde correctamente');
-        }
-    } catch (error) {
-        mostrarToast('error', 'Sin conexión', 'No se pudo conectar con el backend');
-    }
+function configurarEventosAutomaticos() {
+    // Material y espesor
+    document.getElementById('comboMaterial').addEventListener('change', actualizarAutomatico);
+    document.getElementById('comboEspesor').addEventListener('change', actualizarAutomatico);
+    
+    // Tapacantos
+    document.getElementById('comboTapacantoLargo').addEventListener('change', actualizarAutomatico);
+    document.getElementById('comboTapacantoAncho').addEventListener('change', actualizarAutomatico);
 }
 
 // ==============================================
-// EVENT LISTENERS
+// INICIALIZACIÓN
 // ==============================================
 document.addEventListener('DOMContentLoaded', function() {
+    // Evento para mostrar material seleccionado
     document.getElementById('comboMaterial').addEventListener('change', function() {
         document.getElementById('materialSeleccionado').textContent = this.value;
     });
     
+    // Validaciones en tiempo real
     document.getElementById('entradaAv').addEventListener('input', validarEntradaAv);
     document.getElementById('entradaHv').addEventListener('input', validarEntradaHv);
-
-     // Agregar eventos para actualización automática
-    document.getElementById('comboMaterial').addEventListener('change', actualizarTodo);
-    document.getElementById('comboEspesor').addEventListener('change', actualizarTodo);
-    document.getElementById('comboTapacantoLargo').addEventListener('change', actualizarTodo);
-    document.getElementById('comboTapacantoAncho').addEventListener('change', actualizarTodo);
-});
     
-    // Verificar conexión al cargar
-    setTimeout(verificarConexion, 1000);
+    // Configurar eventos automáticos para selects
+    configurarEventosAutomaticos();
+    
+    // Mostrar mensaje de bienvenida
+    setTimeout(() => {
+        mostrarToast('info', 'Bienvenido', 'Sistema CA-7025. Los cambios en materiales y tapacantos se actualizan automáticamente.');
+    }, 1000);
 });
-}

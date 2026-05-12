@@ -3,6 +3,9 @@
 // ==============================================
 const API_BASE_URL = 'https://sistema-corrediza-ca7025.onrender.com';
 
+// Variable para recordar qué select fue el último en cambiar
+let ultimoSelectCambiado = null;
+
 // ==============================================
 // SISTEMA DE NOTIFICACIONES TOAST
 // ==============================================
@@ -114,6 +117,42 @@ function obtenerValorTapacanto(texto) {
 
 let calculando = false;
 
+// Función para mostrar mensaje según el select que cambió
+function mostrarMensajePorSelect(tipoSelect) {
+    // Verificar si ya hay un resultado previo (AP no debe ser '....')
+    const apActual = document.getElementById('resultAp').textContent;
+    if (apActual === '....') {
+        return; // No hay resultado previo, no mostrar mensaje
+    }
+    
+    switch(tipoSelect) {
+        case 'material':
+            const material = document.getElementById('comboMaterial').value;
+            mostrarToast('info', 'Cambio detectado', `Cambio de material: ${material}`);
+            break;
+            
+        case 'espesor':
+            const espesor = document.getElementById('comboEspesor').value;
+            mostrarToast('info', 'Cambio detectado', `Espesor actualizado: ${espesor}`);
+            break;
+            
+        case 'tapacantoLargo':
+            const tapaLargo = document.getElementById('comboTapacantoLargo').value;
+            const anchoPuertaCorte = document.getElementById('resultA').textContent;
+            mostrarToast('info', 'Cambio detectado', `Tapacanto Largo cambiado: ${tapaLargo} - Ancho Puerta Corte: ${anchoPuertaCorte}`);
+            break;
+            
+        case 'tapacantoAncho':
+            const tapaAncho = document.getElementById('comboTapacantoAncho').value;
+            const largoPuertaCorte = document.getElementById('resultL').textContent;
+            mostrarToast('info', 'Cambio detectado', `Tapacanto Ancho cambiado: ${tapaAncho} - Largo Puerta Corte: ${largoPuertaCorte}`);
+            break;
+            
+        default:
+            break;
+    }
+}
+
 async function calcularMedidas() {
     if (calculando) return;
     
@@ -144,6 +183,7 @@ async function calcularMedidas() {
         
         const data = await response.json();
         
+        // Actualizar UI
         document.getElementById('resultAv').textContent = data.av + ' mm';
         document.getElementById('resultHv').textContent = data.hv + ' mm';
         document.getElementById('resultAp').textContent = data.ap + ' mm';
@@ -152,6 +192,7 @@ async function calcularMedidas() {
         document.getElementById('resultEsp').textContent = data.espesor;
         document.getElementById('materialSeleccionado').textContent = data.material;
         
+        // Calcular tapacantos
         const responseTap = await fetch(`${API_BASE_URL}/api/tapacantos`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -169,23 +210,30 @@ async function calcularMedidas() {
         document.getElementById('resultA1').textContent = tapData.anchoTapacanto;
         document.getElementById('resultA2').textContent = tapData.anchoTapacanto;
         
-        mostrarToast('success', 'Cálculo exitoso', `AP: ${data.ap} mm, HP: ${data.hp} mm`);
+        // Mostrar mensaje según el select que cambió (si aplica)
+        if (ultimoSelectCambiado !== null) {
+            mostrarMensajePorSelect(ultimoSelectCambiado);
+            ultimoSelectCambiado = null; // Reset después de mostrar
+        } else {
+            mostrarToast('success', 'Cálculo exitoso', `AP: ${data.ap} mm, HP: ${data.hp} mm`);
+        }
         
     } catch (error) {
         console.error('Error:', error);
         mostrarToast('error', 'Error de conexión', error.message);
+        ultimoSelectCambiado = null;
     } finally {
         calculando = false;
     }
 }
 
-// Esta función se llama cuando cambian los selects
+// Función para actualizar automáticamente al cambiar selects
 function actualizarPorSelect() {
     const av = document.getElementById('entradaAv').value;
     const hv = document.getElementById('entradaHv').value;
     
     if (!av || !hv || av === '' || hv === '') {
-        console.log('No hay medidas ingresadas');
+        ultimoSelectCambiado = null;
         return;
     }
     
@@ -193,24 +241,12 @@ function actualizarPorSelect() {
     const hvNum = parseInt(hv);
     
     if (avNum >= 600 && avNum <= 2400 && hvNum >= 1000 && hvNum <= 2200) {
-        console.log('Actualizando por cambio en select...');
-        
-        // FORZAR LA LECTURA DE VALORES ACTUALES
-        const material = document.getElementById('comboMaterial').value;
-        const espesor = parseInt(document.getElementById('comboEspesor').value.replace(' mm', ''));
-        const tapacantoLargo = parseFloat(document.getElementById('comboTapacantoLargo').value.replace(' mm', ''));
-        const tapacantoAncho = parseFloat(document.getElementById('comboTapacantoAncho').value.replace(' mm', ''));
-        
-        console.log('Nuevos valores:', { material, espesor, tapacantoLargo, tapacantoAncho });
-        
-        // Llamar a calcular con los valores actuales
-        if (typeof calcularMedidas === 'function') {
-            calcularMedidas();
-        } else {
-            console.error('calcularMedidas no está definida');
-        }
+        calcularMedidas();
+    } else {
+        ultimoSelectCambiado = null;
     }
 }
+
 async function generarReporte() {
     const ap = document.getElementById('resultAp').textContent;
     if (ap === '....') {
@@ -277,6 +313,9 @@ function nuevaCalculo() {
     
     document.getElementById('entradaAv').focus();
     mostrarToast('success', 'Nuevo cálculo', 'Formulario reiniciado');
+    
+    // Resetear la variable del último select
+    ultimoSelectCambiado = null;
 }
 
 // ==============================================
@@ -286,20 +325,24 @@ document.addEventListener('DOMContentLoaded', function() {
     // Mostrar material seleccionado
     document.getElementById('comboMaterial').addEventListener('change', function() {
         document.getElementById('materialSeleccionado').textContent = this.value;
+        ultimoSelectCambiado = 'material';
         actualizarPorSelect();
     });
     
     // Espesor
     document.getElementById('comboEspesor').addEventListener('change', function() {
+        ultimoSelectCambiado = 'espesor';
         actualizarPorSelect();
     });
     
     // Tapacantos
     document.getElementById('comboTapacantoLargo').addEventListener('change', function() {
+        ultimoSelectCambiado = 'tapacantoLargo';
         actualizarPorSelect();
     });
     
     document.getElementById('comboTapacantoAncho').addEventListener('change', function() {
+        ultimoSelectCambiado = 'tapacantoAncho';
         actualizarPorSelect();
     });
     
@@ -307,11 +350,14 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('entradaAv').addEventListener('input', function() {
         limitar4Digitos(this);
         validarEntradaAv();
+        // Resetear ultimoSelectCambiado cuando se modifican los inputs
+        ultimoSelectCambiado = null;
     });
     
     document.getElementById('entradaHv').addEventListener('input', function() {
         limitar4Digitos(this);
         validarEntradaHv();
+        ultimoSelectCambiado = null;
     });
     
     setTimeout(() => {
